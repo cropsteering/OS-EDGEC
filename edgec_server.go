@@ -13,10 +13,10 @@ package main
 
 /** Imports */
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -25,23 +25,41 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/go-echarts/go-echarts/v2/types"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
 /** MQTT Info */
 var MQTT_CLIENT mqtt.Client
 var MQTT_BROKER = ""
-var MQTT_ID = ""
+var MQTT_ID = "EdgeC"
 var MQTT_USER = ""
 var MQTT_PASSWORD = ""
 var MQTT_CONFIG = MQTT_USER + "/" + MQTT_ID + "/config"
 var MQTT_STATUS = MQTT_USER + "/" + MQTT_ID + "/sataus"
 var MQTT_PORT = 8883
 
+/** InfluxDB Info */
+var INFLUX_URL = ""
+var INFLUX_TOKEN = ""
+var INFLUX_ORG = ""
+
+/** Channels */
+var line_chan = make(chan []opts.LineData)
+var time_chan = make(chan []opts.LineData)
+
+/** Cache */
+var line_cache []opts.LineData
+var time_cache []opts.LineData
+
 /**
 * Programs main call
 *
  */
 func main() {
+	log.Println("Starting Edge Controller")
 	setup()
 }
 
@@ -56,7 +74,8 @@ func setup() {
 
 	/** Start any Go routines here */
 	go logic_loop()
-	go start_http()
+	go setup_http()
+	go setup_influxdb()
 
 	/** Setup MQTT server on main routine */
 	mqtt_setup()
@@ -85,10 +104,11 @@ func logic_loop() {
 }
 
 /**
-* Start HTTPD
+* Setup HTTPD
 *
  */
-func start_http() {
+func setup_http() {
+	log.Println("Starting HTTPD")
 	http.HandleFunc("/", http_server)
 	err := http.ListenAndServe(":8081", nil)
 	if err != nil {
@@ -102,7 +122,85 @@ func start_http() {
  */
 func http_server(w http.ResponseWriter, r *http.Request) {
 	log.Println("HTTP Request")
-	io.WriteString(w, "Open Steering edge controller web portal")
+	if len(line_cache) <= 0 {
+		line_cache = <-line_chan
+	}
+	if len(time_cache) <= 0 {
+		time_cache = <-time_chan
+	}
+	line := charts.NewLine()
+	line.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{Theme: types.ChartLine}),
+		charts.WithTitleOpts(opts.Title{
+			Title:    "Influx data",
+			Subtitle: "Sensors",
+		}))
+
+	line.SetXAxis(time_cache).
+		AddSeries("Category A", line_cache).
+		SetSeriesOptions(
+			charts.WithLineChartOpts(opts.LineChart{
+				ShowSymbol: true,
+				Smooth:     false,
+			}),
+			charts.WithLabelOpts(opts.Label{
+				Show: true,
+			}),
+		)
+	line.Render(w)
+}
+
+/**
+* Setup InfluxDB
+*
+ */
+func setup_influxdb() {
+	client := influxdb2.NewClient(INFLUX_URL, INFLUX_TOKEN)
+	defer client.Close()
+	queryAPI := client.QueryAPI(INFLUX_ORG)
+	query := `from(bucket: "opensteering")
+                |> range(start: -1m)
+                |> filter(fn: (r) => r._measurement == "mqtt_consumer")
+			`
+	results, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		log.Println(err)
+	} else {
+		var influx_data []string
+		var time_data []string
+		for results.Next() {
+			influx_value := fmt.Sprintf("%v", results.Record().Value())
+			//mqtt_topic := fmt.Sprintf("%v", results.Record().ValueByKey("topic"))
+			mqtt_time := fmt.Sprintf("%v", results.Record().ValueByKey("_time"))
+			time_data = append(time_data, mqtt_time)
+			influx_data = append(influx_data, influx_value)
+		}
+		line_cache = nil
+		time_cache = nil
+		line_chan <- get_line(influx_data)
+		time_chan <- get_time(time_data)
+		if err := results.Err(); err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func get_line(idata []string) []opts.LineData {
+	ldata := make([]opts.LineData, 0)
+	size := len(idata)
+	for x := 0; x < size; x++ {
+		ldata = append(ldata, opts.LineData{Name: fmt.Sprintf("Value %d", x+1), Value: idata[x]})
+	}
+	return ldata
+}
+
+func get_time(tdata []string) []opts.LineData {
+	ldata := make([]opts.LineData, 0)
+	size := len(tdata)
+	for x := 0; x < size; x++ {
+		ldata = append(ldata, opts.LineData{Value: tdata[x]})
+	}
+	return ldata
 }
 
 /**
