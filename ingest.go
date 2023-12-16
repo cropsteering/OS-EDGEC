@@ -19,8 +19,13 @@ func Ingest_MQTT(influxClient influxdb2.Client, msg mqtt.Message) {
 	// Create a point and add to batch
 	p := influxdb2.NewPointWithMeasurement("ingest")
 	for i, value := range values {
-		value_double, _ := strconv.ParseFloat(value, 64)
-		p.AddField(fmt.Sprintf("value%d", i), value_double)
+		value_double, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			log.Println("Error converting to float ", err)
+		} else {
+			p.AddField(fmt.Sprintf("value%d", i), value_double)
+		}
+
 	}
 	p.SetTime(time.Now())
 

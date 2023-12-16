@@ -10,7 +10,7 @@ import (
 * Write to file
 *
  */
-func cache_array(data_array []string, file_path string) error {
+func Cache_Array(data_array []string, file_path string) error {
 	existing_data, err := Read_Array(file_path)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -60,12 +60,14 @@ func NewTlsConfig() *tls.Config {
 }
 
 func mqtt_sub(client mqtt.Client, topics []string) {
-	for _, topic := range topics {
-		// Subscribe to each topic
-		if token := client.Subscribe(topic, 0, nil); token.Wait() && token.Error() != nil {
-			log.Println(token.Error())
-		} else {
-			log.Printf("Subscribed to %s", topic)
+	if MQTT_CONNECTED {
+		for _, topic := range topics {
+			// Subscribe to each topic
+			if token := client.Subscribe(topic, 0, nil); token.Wait() && token.Error() != nil {
+				log.Println(token.Error())
+			} else {
+				log.Printf("Subscribed to %s", topic)
+			}
 		}
 	}
 }
@@ -75,11 +77,13 @@ func mqtt_sub(client mqtt.Client, topics []string) {
 *
  */
 func mqtt_publish(topic string, msg string) {
-	text := fmt.Sprint(msg)
-	token := MQTT_CLIENT.Publish(topic, 0, false, text)
-	token.Wait()
-	log.Printf("MQTT publish: %s to %s", msg, topic)
-	time.Sleep(time.Second)
+	if MQTT_CONNECTED {
+		text := fmt.Sprint(msg)
+		token := MQTT_CLIENT.Publish(topic, 0, false, text)
+		token.Wait()
+		log.Printf("MQTT publish: %s to %s", msg, topic)
+		time.Sleep(time.Second)
+	}
 }
 
 /**
