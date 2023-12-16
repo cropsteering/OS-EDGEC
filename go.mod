@@ -4,7 +4,6 @@ go 1.21.4
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
-	github.com/go-echarts/go-echarts/v2 v2.3.2
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 )
 
