@@ -123,7 +123,6 @@ func Query_Topics() {
 					} else {
 						contains := slices.Contains(value_names, v_name)
 						if !contains {
-							log.Println("Adding value name:", v_name)
 							value_names = append(value_names, v_name)
 						}
 					}
