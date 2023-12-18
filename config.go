@@ -13,4 +13,4 @@ var MQTT_PORT = 8883
 var INFLUX_URL = ""
 var INFLUX_TOKEN = ""
 var INFLUX_ORG = ""
-var INFLUX_BUCKER = ""
+var INFLUX_BUCKET = ""

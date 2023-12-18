@@ -15,6 +15,7 @@ var MQTT_CLIENT mqtt.Client
 var MQTT_CONNECTED bool = false
 
 func Setup_MQTT() {
+	// Setup main MQTT connection
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tls://%s:%d", MQTT_BROKER, MQTT_PORT))
 	tlsConfig := NewTlsConfig()
@@ -98,7 +99,7 @@ var messagepub_handler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.M
 	case MQTT_STATUS:
 		log.Println("Status msg")
 	default:
-		Ingest_MQTT(Influx_Client, msg)
+		Ingest_MQTT(Influx_Client, msg.Topic(), string(msg.Payload()))
 	}
 }
 
