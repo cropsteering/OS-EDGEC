@@ -23,4 +23,5 @@ func Setup_Http() {
 
 func http_server(w http.ResponseWriter, r *http.Request) {
 	log.Println("HTTP Request")
+	http.ServeFile(w, r, "index.html")
 }

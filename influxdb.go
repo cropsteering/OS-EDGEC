@@ -97,6 +97,7 @@ func Query_Topics() {
 		if err != nil {
 			log.Println(err)
 		}
+		log.Println("Chart created: lineChart.html")
 		for _, v := range cached_array {
 			queryAPI := Influx_Client.QueryAPI(INFLUX_ORG)
 			fluxQuery := `
@@ -173,8 +174,6 @@ func Query_Topics() {
 				if err := line.Render(f); err != nil {
 					log.Println(err)
 				}
-
-				log.Println("Chart created: lineChart.html")
 			}
 		}
 	}
