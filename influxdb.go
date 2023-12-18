@@ -48,7 +48,7 @@ func Influx_Disco() {
 	queryAPI := Influx_Client.QueryAPI(INFLUX_ORG)
 	query := `from(bucket: "` + INFLUX_BUCKET + `")
 	            |> range(start: -1h)
-	            |> filter(fn: (r) => r._measurement == "mqtt_consumer")
+	            |> filter(fn: (r) => r._measurement == "` + INFLUX_MEASUREMENT + `")
 			`
 	results, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
