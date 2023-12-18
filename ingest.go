@@ -14,7 +14,7 @@ import (
 func Ingest_MQTT(influxClient influxdb2.Client, topic, payload string) {
 	values := strings.Split(payload, ",")
 
-	p := influxdb2.NewPointWithMeasurement("mqtt_data")
+	p := influxdb2.NewPointWithMeasurement(INFLUX_MEASUREMENT)
 	p.AddTag("topic", topic)
 	for i, value := range values {
 		floatValue, err := strconv.ParseFloat(value, 64)
