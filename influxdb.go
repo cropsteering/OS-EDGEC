@@ -99,6 +99,7 @@ func Query_Topics() {
 		}
 		log.Println("Chart created: lineChart.html")
 		for _, v := range cached_array {
+			graph_cache = make(map[string]interface{})
 			queryAPI := Influx_Client.QueryAPI(INFLUX_ORG)
 			fluxQuery := `
 				from(bucket: "` + INFLUX_BUCKET + `")
@@ -147,6 +148,7 @@ func Query_Topics() {
 
 				json_obj, _ := json.MarshalIndent(graph_cache, "", "  ")
 				value_count, _ := array_count(json_obj)
+				// -1 because of []times
 				value_count = value_count - 1
 
 				line := charts.NewLine()
@@ -170,11 +172,11 @@ func Query_Topics() {
 						AddSeries(fmt.Sprintf("value%d", x), graph_cache[fmt.Sprintf("value%d", x)].([]opts.LineData)).
 						SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: false}))
 				}
-
 				if err := line.Render(f); err != nil {
 					log.Println(err)
 				}
 			}
+			graph_cache = nil
 		}
 	}
 }
