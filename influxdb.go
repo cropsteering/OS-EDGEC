@@ -89,6 +89,8 @@ func Influx_Disco() {
 *
  */
 func Query_Topics() {
+	MU.Lock()
+	defer MU.Unlock()
 	cached_array, err := Read_Array("topics.json")
 	if err != nil {
 		log.Println("Error reading array from file:", err)

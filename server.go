@@ -3,8 +3,11 @@ package main
 import (
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
+
+var MU sync.Mutex
 
 func main() {
 	/** Create chan for signal support (CTRL+C) */
