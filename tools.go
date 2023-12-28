@@ -52,3 +52,26 @@ func Read_Array(file_path string) ([]string, error) {
 
 	return cached_array, nil
 }
+
+/**
+* Count how many arrays in our JSON
+*
+ */
+func array_count(jsonData []byte) (int, error) {
+	var data map[string]interface{}
+
+	if err := json.Unmarshal([]byte(jsonData), &data); err != nil {
+		return 0, err
+	}
+
+	count := 0
+
+	for _, v := range data {
+		if arr, ok := v.([]interface{}); ok {
+			_ = arr
+			count++
+		}
+	}
+
+	return count, nil
+}

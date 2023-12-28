@@ -98,110 +98,93 @@ func Query_Topics() {
 		f, err := os.Create("lineChart.html")
 		if err != nil {
 			log.Println(err)
-		}
-		log.Println("Chart created: lineChart.html")
-		for _, v := range cached_array {
-			graph_cache = make(map[string]interface{})
-			queryAPI := Influx_Client.QueryAPI(INFLUX_ORG)
-			fluxQuery := `
+		} else {
+			f.WriteString("<center>Openly Automated</center>")
+			log.Println("Chart created: lineChart.html")
+			for _, v := range cached_array {
+				graph_cache = make(map[string]interface{})
+				queryAPI := Influx_Client.QueryAPI(INFLUX_ORG)
+				fluxQuery := `
 				from(bucket: "` + INFLUX_BUCKET + `")
 				|> range(start: -1h)
 				|> filter(fn: (r) => r["topic"] == "` + v + `")
 				|> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
 				|> yield(name: "mean")
 			`
-			results, err := queryAPI.Query(context.Background(), fluxQuery)
-			if err != nil {
-				log.Println(err)
-			} else {
-				var influx_data []opts.LineData
-				var time_data []string
-				var value_names []string
-				var last_value string
-				var v_name string
-
-				for results.Next() {
-					v_name = results.Record().Field()
-					if err != nil {
-						log.Println("Value name error ", err)
-					} else {
-						contains := slices.Contains(value_names, v_name)
-						if !contains {
-							value_names = append(value_names, v_name)
-						}
-					}
-					if last_value == v_name {
-						time_data = append(time_data, results.Record().Time().Format("2006-01-02 15:04:05"))
-						influx_data = append(influx_data, opts.LineData{Value: results.Record().Value()})
-					} else {
-						influx_data = nil
-						time_data = nil
-					}
-					graph_cache["name"] = fmt.Sprintf("%s", results.Record().ValueByKey("topic"))
-					graph_cache[v_name] = influx_data
-					last_value = v_name
-				}
-
-				graph_cache["times"] = time_data
-
-				if results.Err() != nil {
-					log.Printf("Query processing error: %v\n", results.Err().Error())
-				}
-
-				json_obj, _ := json.MarshalIndent(graph_cache, "", "  ")
-				value_count, _ := array_count(json_obj)
-				// -1 because of []times
-				value_count = value_count - 1
-
-				line := charts.NewLine()
-				line.SetGlobalOptions(
-					charts.WithTooltipOpts(opts.Tooltip{
-						Show:      true,
-						Trigger:   "axis",
-						TriggerOn: "mousemove",
-						Enterable: false,
-					}),
-					charts.WithTitleOpts(opts.Title{
-						Title:    graph_cache["name"].(string),
-						Subtitle: "",
-					}),
-					charts.WithYAxisOpts(opts.YAxis{
-						Name: "",
-					}),
-				)
-				for x := 0; x < value_count; x++ {
-					line.SetXAxis(graph_cache["times"].([]string)).
-						AddSeries(fmt.Sprintf("value%d", x), graph_cache[fmt.Sprintf("value%d", x)].([]opts.LineData)).
-						SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: false}))
-				}
-				if err := line.Render(f); err != nil {
+				results, err := queryAPI.Query(context.Background(), fluxQuery)
+				if err != nil {
 					log.Println(err)
+				} else {
+					var influx_data []opts.LineData
+					var time_data []string
+					var value_names []string
+					var last_value string
+					var v_name string
+
+					for results.Next() {
+						v_name = results.Record().Field()
+						if err != nil {
+							log.Println("Value name error ", err)
+						} else {
+							contains := slices.Contains(value_names, v_name)
+							if !contains {
+								value_names = append(value_names, v_name)
+							}
+						}
+						if last_value == v_name {
+							time_data = append(time_data, results.Record().Time().Format("2006-01-02 15:04:05"))
+							influx_data = append(influx_data, opts.LineData{Value: results.Record().Value()})
+						} else {
+							influx_data = nil
+							time_data = nil
+						}
+						graph_cache["name"] = fmt.Sprintf("%s", results.Record().ValueByKey("topic"))
+						graph_cache[v_name] = influx_data
+						last_value = v_name
+					}
+
+					graph_cache["times"] = time_data
+
+					if results.Err() != nil {
+						log.Printf("Query processing error: %v\n", results.Err().Error())
+					}
+
+					if graph_cache["name"] != nil {
+						json_obj, _ := json.MarshalIndent(graph_cache, "", "  ")
+						value_count, _ := array_count(json_obj)
+						// -1 because of []times
+						value_count = value_count - 1
+
+						line := charts.NewLine()
+						line.SetGlobalOptions(
+							charts.WithTooltipOpts(opts.Tooltip{
+								Show:      true,
+								Trigger:   "axis",
+								TriggerOn: "mousemove",
+								Enterable: false,
+							}),
+							charts.WithTitleOpts(opts.Title{
+								Title:    graph_cache["name"].(string),
+								Subtitle: "",
+							}),
+							charts.WithYAxisOpts(opts.YAxis{
+								Name: "",
+							}),
+						)
+						for x := 0; x < value_count; x++ {
+							line.SetXAxis(graph_cache["times"].([]string)).
+								AddSeries(fmt.Sprintf("value%d", x), graph_cache[fmt.Sprintf("value%d", x)].([]opts.LineData)).
+								SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: false}))
+						}
+						if err := line.Render(f); err != nil {
+							log.Println(err)
+						}
+					} else {
+						f.WriteString("Error loading graph data.")
+					}
 				}
+				graph_cache = nil
 			}
-			graph_cache = nil
 		}
 	}
-}
-
-/**
-* Count how many arrays in our JSON
-*
- */
-func array_count(jsonData []byte) (int, error) {
-	var data map[string]interface{}
-
-	if err := json.Unmarshal([]byte(jsonData), &data); err != nil {
-		return 0, err
-	}
-
-	count := 0
-
-	for _, v := range data {
-		if arr, ok := v.([]interface{}); ok {
-			_ = arr
-			count++
-		}
-	}
-
-	return count, nil
 }
