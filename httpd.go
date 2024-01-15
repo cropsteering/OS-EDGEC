@@ -1,8 +1,12 @@
 package main
 
 import (
+	"html/template"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/google/uuid"
 )
 
 /**
@@ -13,6 +17,8 @@ func Setup_Http() {
 	log.Println("Starting HTTPD")
 	http.HandleFunc("/", index_server)
 	http.HandleFunc("/graphs", graph_server)
+	http.HandleFunc("/logic", logic_server)
+	http.HandleFunc("/disco", disco_server)
 	err := http.ListenAndServe(":8081", nil)
 	if err != nil {
 		log.Fatal(err)
@@ -27,7 +33,100 @@ func index_server(w http.ResponseWriter, r *http.Request) {
 func graph_server(w http.ResponseWriter, r *http.Request) {
 	log.Println("HTTP Request, graphs")
 	Query_Topics()
-	MU.Lock()
+	graph_mu.Lock()
 	http.ServeFile(w, r, "lineChart.html")
-	MU.Unlock()
+	graph_mu.Unlock()
+}
+
+func logic_server(w http.ResponseWriter, r *http.Request) {
+	log.Println("HTTP Request, logic")
+	logic_mu.Lock()
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusInternalServerError)
+		return
+	}
+
+	button_name := r.FormValue("submit")
+
+	switch button_name {
+	case "Add":
+		log.Println("Added logic")
+		add_logic(r)
+	case "Delete":
+		log.Println("Deleted logic")
+		logic_json, err := Read_Map("logic.json")
+		if err != nil {
+			log.Println(err)
+		} else {
+			delete(logic_json, r.FormValue("uuid"))
+			temp_err := Cache_Map(logic_json, "logic.json")
+			if temp_err != nil {
+				log.Println(temp_err)
+			}
+		}
+	default:
+		log.Println("Invalid button")
+	}
+
+	tmpl, err := template.New("logic").Parse(Build_Logic())
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		err = tmpl.ExecuteTemplate(w, "logic", "")
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+	logic_mu.Unlock()
+}
+
+func add_logic(r *http.Request) {
+	if r.Method == http.MethodPost {
+		UUID := uuid.New()
+		var temp []string
+		var temp_map = make(map[string]interface{})
+		temp = append(temp, r.FormValue("SENSOR"))
+		temp = append(temp, r.FormValue("READING"))
+		temp = append(temp, r.FormValue("EQU"))
+		temp = append(temp, r.FormValue("VALUE"))
+		temp = append(temp, r.FormValue("PIN"))
+		temp = append(temp, r.FormValue("STATUS"))
+		temp_map[UUID.String()] = temp
+		temp_err := Append_Map(temp_map, "logic.json")
+		if temp_err != nil {
+			log.Println(temp_err)
+		}
+		temp = nil
+		temp_map = nil
+	}
+}
+
+func disco_server(w http.ResponseWriter, r *http.Request) {
+	log.Println("HTTP Request, disco")
+	mqtt_mu.Lock()
+	if r.Method == http.MethodPost {
+		switch r.FormValue("Disco") {
+		case "Enable":
+			log.Println("Discovery mode enabled")
+			Enable_Disco = true
+		case "Disable":
+			log.Println("Discovery mode disabled")
+			Enable_Disco = false
+		}
+	}
+	tmpl, err := template.New("disco").Parse(Disco_HTML)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		err = tmpl.ExecuteTemplate(w, "disco", strconv.FormatBool(Enable_Disco))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+	mqtt_mu.Unlock()
 }

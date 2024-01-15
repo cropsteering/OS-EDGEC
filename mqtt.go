@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -13,6 +14,8 @@ import (
 
 var MQTT_CLIENT mqtt.Client
 var MQTT_CONNECTED bool = false
+var mqtt_topics []string
+var Enable_Disco bool = false
 
 func Setup_MQTT() {
 	// Setup main MQTT connection
@@ -31,16 +34,24 @@ func Setup_MQTT() {
 		log.Println(token.Error())
 	}
 
-	// Sub to MQTT topics
-	topics, err := Read_Array("topics.json")
-	if err != nil {
-		log.Println("Error reading JSON ", err)
+	if _, err := os.Stat("topics.json"); os.IsNotExist(err) {
+		mqtt_topics = append(mqtt_topics, MQTT_CONFIG)
+		mqtt_topics = append(mqtt_topics, MQTT_STATUS)
+		cerr := Cache_Array("topics.json", mqtt_topics)
+		if cerr != nil {
+			log.Println("Error caching data:", cerr)
+		}
 	} else {
-		topics = append(topics, MQTT_CONFIG)
-		topics = append(topics, MQTT_STATUS)
-		mqtt_sub(MQTT_CLIENT, topics)
+		topics, terr := Read_Array("topics.json")
+		if terr != nil {
+			log.Println(terr)
+		} else {
+			mqtt_topics = topics
+		}
 	}
-
+	mqtt_sub(MQTT_CLIENT, MQTT_CONFIG)
+	mqtt_sub(MQTT_CLIENT, MQTT_STATUS)
+	mqtt_sub(MQTT_CLIENT, MQTT_USER+"/#")
 }
 
 /**
@@ -60,19 +71,6 @@ func NewTlsConfig() *tls.Config {
 	}
 }
 
-func mqtt_sub(client mqtt.Client, topics []string) {
-	if MQTT_CONNECTED {
-		for _, topic := range topics {
-			// Subscribe to each topic
-			if token := client.Subscribe(topic, 0, nil); token.Wait() && token.Error() != nil {
-				log.Println(token.Error())
-			} else {
-				log.Printf("Subscribed to %s", topic)
-			}
-		}
-	}
-}
-
 /**
 * Publish to MQTT
 *
@@ -84,6 +82,20 @@ func mqtt_publish(topic string, msg string) {
 		token.Wait()
 		log.Printf("MQTT publish: %s to %s", msg, topic)
 		time.Sleep(time.Second)
+	}
+}
+
+/**
+* Subscribe to MQTT topics
+*
+ */
+func mqtt_sub(client mqtt.Client, topic string) {
+	if MQTT_CONNECTED {
+		if token := client.Subscribe(topic, 0, nil); token.Wait() && token.Error() != nil {
+			log.Println("MQTT Token", token.Error())
+		} else {
+			log.Printf("Subscribed to %s", topic)
+		}
 	}
 }
 
@@ -101,6 +113,25 @@ var messagepub_handler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.M
 	default:
 		Ingest_MQTT(Influx_Client, msg.Topic(), string(msg.Payload()))
 	}
+	MQTT_Disco(msg.Topic())
+}
+
+/**
+* Discovery Mode
+* Search for topics to auto generate values
+*
+ */
+func MQTT_Disco(topic string) {
+	mqtt_mu.Lock()
+	if Enable_Disco {
+		contains := slices.Contains(mqtt_topics, topic)
+		if !contains {
+			log.Println("New topic: ", topic)
+			mqtt_topics = append(mqtt_topics, topic)
+			Append_String("topics.json", topic)
+		}
+	}
+	mqtt_mu.Unlock()
 }
 
 /**

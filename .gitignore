@@ -26,3 +26,9 @@ go.work
 
 # Line chart html
 lineChart.html
+logic.html
+
+# JSON
+topics.JSON
+values.JSON
+logic.JSON
