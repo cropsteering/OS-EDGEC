@@ -51,20 +51,11 @@ func logic_server(w http.ResponseWriter, r *http.Request) {
 
 	switch button_name {
 	case "Add":
-		log.Println("Added logic")
+		log.Println("Adding logic")
 		add_logic(r)
 	case "Delete":
-		log.Println("Deleted logic")
-		logic_json, err := Read_Map("logic.json")
-		if err != nil {
-			log.Println(err)
-		} else {
-			delete(logic_json, r.FormValue("uuid"))
-			temp_err := Cache_Map(logic_json, "logic.json")
-			if temp_err != nil {
-				log.Println(temp_err)
-			}
-		}
+		log.Println("Deleting logic")
+		del_logic(r)
 	default:
 		log.Println("Invalid button")
 	}
@@ -81,6 +72,19 @@ func logic_server(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	logic_mu.Unlock()
+}
+
+func del_logic(r *http.Request) {
+	logic_json, err := Read_Map("logic.json")
+	if err != nil {
+		log.Println(err)
+	} else {
+		delete(logic_json, r.FormValue("uuid"))
+		temp_err := Cache_Map(logic_json, "logic.json")
+		if temp_err != nil {
+			log.Println(temp_err)
+		}
+	}
 }
 
 func add_logic(r *http.Request) {

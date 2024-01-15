@@ -143,6 +143,8 @@ func Query_Topics() {
 }
 
 func Query_Values() {
+	influx_mu.Lock()
+	defer influx_mu.Unlock()
 	cached_array, err := Read_Array("topics.json")
 	if err != nil {
 		log.Println("Error reading array:", err)

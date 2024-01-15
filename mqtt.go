@@ -129,6 +129,7 @@ func MQTT_Disco(topic string) {
 			log.Println("New topic: ", topic)
 			mqtt_topics = append(mqtt_topics, topic)
 			Append_String("topics.json", topic)
+			Query_Values()
 		}
 	}
 	mqtt_mu.Unlock()

@@ -10,6 +10,7 @@ import (
 var graph_mu sync.Mutex
 var logic_mu sync.Mutex
 var mqtt_mu sync.Mutex
+var influx_mu sync.Mutex
 
 func main() {
 	/** Create chan for signal support (CTRL+C) */

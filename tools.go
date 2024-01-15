@@ -30,17 +30,35 @@ func Cache_Map(data interface{}, file_path string) error {
 /**
 * Append string array to JSON
 * Write to file
-* TODO: Check to see if logic exists
+* TODO: Check to see if logic exists, duplicates
 *
  */
 func Append_Map(data map[string]interface{}, file_path string) error {
-	jsonData, _ := os.ReadFile(file_path)
-	var data_map map[string]interface{}
-	_ = json.Unmarshal(jsonData, &data_map)
-	AppendMaps(data_map, data)
-	json_data, _ := json.MarshalIndent(data_map, "", "  ")
-	_ = os.WriteFile(file_path, json_data, 0644)
-
+	jsonData, err := os.ReadFile(file_path)
+	if err != nil {
+		c_err := Cache_Map(data, file_path)
+		if c_err != nil {
+			return c_err
+		}
+		return err
+	} else {
+		var data_map map[string]interface{}
+		jerr := json.Unmarshal(jsonData, &data_map)
+		if jerr != nil {
+			return jerr
+		} else {
+			AppendMaps(data_map, data)
+			json_data, jerr2 := json.MarshalIndent(data_map, "", "  ")
+			if jerr2 != nil {
+				return jerr2
+			} else {
+				ferr := os.WriteFile(file_path, json_data, 0644)
+				if ferr != nil {
+					return ferr
+				}
+			}
+		}
+	}
 	return nil
 }
 
