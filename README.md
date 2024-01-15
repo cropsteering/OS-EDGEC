@@ -1,10 +1,10 @@
 # OS-EDGEC
 
-Create a ca.perm file in the same directory as your edgec_server.go (or binary)
+Create a ca.pem file in the same directory as your edgec_server.go (or binary)
 
-Add your TLS cert in your ca.perm file
+Add your TLS cert in your ca.pem file
 
-Example of ca.perm:
+Example of ca.pem:
 
 -----BEGIN CERTIFICATE-----  
 MIIM9DCCC9wCAQAwXDEVMBMGA1UEAwwMKi5nb29nbGUuY29tMQswCQYDVQQGEwJD  
