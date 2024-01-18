@@ -19,6 +19,7 @@ Create a ca.pem file in the same directory as your edgec_server.go (or binary)
 run or build the edge controller
 
 go run .
+
 go build
 
 
