@@ -1,8 +1,29 @@
 # OS-EDGEC
 
+Open Steering edge controller is written in Go Lang, and can be run or built for many operating systems.
+
+A Publish/Subscribe system, where sensors publish data on unique topics to the subscribing edge controller, which in turn publishes control commands to relays, motors, actuators and more.
+
+# System Setup
+
+Edge controller relies on MQTT for telemetry. You may use your MQTT server of choice. We suggest EMQX with username/password, jailed users, and ssl/tls. EMQX is open source and free for on premise installation. Edge controller will also work with many MQTT free to use services online. We do however suggest you run your services on premise.
+
+Edge controller also relies on InfluxDB for time based data store. 
+
+Edit config.go to match your mqtt and influxdb server details. 
+
+Setup and deploy sensors or control. You can find SDI-12, RS485, and power control examples in our repository. You should configure each sensor mcu with a unique mqtt/device id, and a unique topic or "zone name" for orginizational purposes.
+
 Create a ca.pem file in the same directory as your edgec_server.go (or binary)
 
-Add your TLS cert in your ca.pem file
+run or build the edge controller
+
+go run .
+go build
+
+
+
+
 
 Example of ca.pem:
 
