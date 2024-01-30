@@ -1,5 +1,6 @@
 /**
-* TODO: Add edit and cloning, weight, get powerc name automatically
+* TODO: Add edit and cloning, weight, get powerc name automatically,
+* if state already exists, dont do anything
 *
  */
 
@@ -13,13 +14,9 @@ import (
 	"time"
 )
 
-/**
-* Basic logic loop
-* TODO: Grab values from values.json
-*
- */
 var logic_delay = 5
 var logic_cache []map[string]interface{}
+var state_cache = make(map[int]interface{})
 
 func Logic_Setup() {
 	Load_Logic()
@@ -111,16 +108,20 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 
 func pin_switch(sen_name string, state string, pin int, powerc string) {
 	parts := strings.Split(sen_name, "/")
-	switch state {
-	case "on":
-		pin_cmd := "0+" + strconv.Itoa(pin)
-		power_control := MQTT_USER + "/" + parts[1] + "/" + powerc + "/control"
-		Mqtt_Publish(power_control, pin_cmd)
-		log.Println("pin " + strconv.Itoa(pin) + " on")
-	case "off":
-		pin_cmd := "1+" + strconv.Itoa(pin)
-		power_control := MQTT_USER + "/" + parts[1] + "/" + powerc + "/control"
-		Mqtt_Publish(power_control, pin_cmd)
-		log.Println("pin " + strconv.Itoa(pin) + " off")
+	if value, exists := state_cache[pin]; exists && value == state {
+		// Ignore
+	} else {
+		switch state {
+		case "on":
+			pin_cmd := "0+" + strconv.Itoa(pin)
+			power_control := MQTT_USER + "/" + parts[1] + "/" + powerc + "/control"
+			Mqtt_Publish(power_control, pin_cmd)
+			state_cache[pin] = state
+		case "off":
+			pin_cmd := "1+" + strconv.Itoa(pin)
+			power_control := MQTT_USER + "/" + parts[1] + "/" + powerc + "/control"
+			Mqtt_Publish(power_control, pin_cmd)
+			state_cache[pin] = state
+		}
 	}
 }
