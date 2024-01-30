@@ -84,6 +84,7 @@ func del_logic(r *http.Request) {
 		if temp_err != nil {
 			log.Println(temp_err)
 		}
+		Load_Logic()
 	}
 }
 
@@ -98,6 +99,7 @@ func add_logic(r *http.Request) {
 		temp = append(temp, r.FormValue("VALUE"))
 		temp = append(temp, r.FormValue("PIN"))
 		temp = append(temp, r.FormValue("STATUS"))
+		temp = append(temp, r.FormValue("POWERC"))
 		temp_map[UUID.String()] = temp
 		temp_err := Append_Map(temp_map, "logic.json")
 		if temp_err != nil {
@@ -105,6 +107,7 @@ func add_logic(r *http.Request) {
 		}
 		temp = nil
 		temp_map = nil
+		Load_Logic()
 	}
 }
 

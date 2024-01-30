@@ -57,8 +57,8 @@ var Logic_HTML_1 string = `
 <body>
 	<h1>Logic Editor</h1>
 	<form method='POST'>
-		<label>Testing:</label><br />
-		<input type='text' name='testing'><br /><br />
+		<label>Power Controller:</label><br />
+		<input type='text' name='POWERC'><br /><br />
 		<label for='SENSOR'>IF SENSOR </label>
 			<select name='SENSOR' id='SENSOR' onchange='update()'>
 `
@@ -87,6 +87,17 @@ var Logic_HTML_2 string = `
 				}
 			}
 			window.onload = update;
+
+			function validateInput(input) {
+				let numericValue = input.value.replace(/[^0-9]/g, '');
+			
+				numericValue = Math.min(15000, Math.max(0, numericValue));
+			
+				input.value = numericValue;
+			
+				const placeholderText = "Enter numbers (0-15000)";
+				input.placeholder = input.value.length === 0 ? placeholderText : "";
+			  }
 		</script>
 `
 
@@ -129,15 +140,9 @@ func Build_Logic() string {
 						<option value='equa'>Equal to</option>
 						<option value='nequa'>Not equal to</option>
 					</select>
-				<label for='VALUE'>VALUE </label>
-					<select name='VALUE' id='VALUE'>
 		`)
-		for x := 0; x <= 100; x++ {
-			str := strconv.Itoa(x)
-			s_builder.WriteString("				<option value='" + str + "'>" + str + "</option>\n")
-		}
+		s_builder.WriteString("				<input type='text' id='VALUE' name='VALUE' placeholder='Enter numbers (0-15000)' oninput='validateInput(this)'>\n")
 		s_builder.WriteString(`
-				</select>
 				<label for='PIN'>TURN PIN </label>
 					<select name='PIN' id='PIN'>
 		`)
@@ -165,6 +170,7 @@ func Build_Logic() string {
 					<th>Sensor value</th>
 					<th>Pin</th>
 					<th>Pin state</th>
+					<th>Power Controller</th>
 					<th>Delete logic</th>
 				</tr>
 			</thead>

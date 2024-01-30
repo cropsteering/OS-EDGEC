@@ -20,7 +20,7 @@ func main() {
 	go Setup_Http()
 	go Setup_Influxdb()
 	go Setup_MQTT()
-	go Logic_Loop()
+	go Logic_Setup()
 
 	<-done
 }

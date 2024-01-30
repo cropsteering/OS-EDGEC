@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strconv"
 )
 
 /**
@@ -232,4 +233,9 @@ func Iterate_Interface(data interface{}) []string {
 		log.Println("Input is not a []interface{}")
 	}
 	return temp
+}
+
+func Is_Float(str string) bool {
+	_, err := strconv.ParseFloat(str, 64)
+	return err == nil
 }

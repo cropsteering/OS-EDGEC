@@ -75,7 +75,7 @@ func NewTlsConfig() *tls.Config {
 * Publish to MQTT
 *
  */
-func mqtt_publish(topic string, msg string) {
+func Mqtt_Publish(topic string, msg string) {
 	if MQTT_CONNECTED {
 		text := fmt.Sprint(msg)
 		token := MQTT_CLIENT.Publish(topic, 0, false, text)

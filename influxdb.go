@@ -61,11 +61,11 @@ func Query_Topics() {
 					flux_query := `
 								from(bucket: "` + INFLUX_BUCKET + `")
 								|> range(start: -1h)
+								|> filter(fn: (r) => r["_measurement"] == "` + INFLUX_MEASUREMENT + `")
 								|> filter(fn: (r) => r["topic"] == "` + v + `")
-								|> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
 								|> yield(name: "mean")
 								`
-					results, err := query_db(flux_query)
+					results, err := Query_DB(flux_query)
 					if err != nil {
 						log.Println(err)
 					} else {
@@ -156,11 +156,11 @@ func Query_Values() {
 				flux_query := `
 				from(bucket: "` + INFLUX_BUCKET + `")
 				|> range(start: -1h)
+				|> filter(fn: (r) => r["_measurement"] == "` + INFLUX_MEASUREMENT + `")
 				|> filter(fn: (r) => r["topic"] == "` + v + `")
-				|> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
 				|> yield(name: "mean")
 				`
-				results, err := query_db(flux_query)
+				results, err := Query_DB(flux_query)
 				if err != nil {
 					log.Println("Query:", err)
 				} else {
@@ -186,7 +186,7 @@ func Query_Values() {
 	}
 }
 
-func query_db(query string) (*api.QueryTableResult, error) {
+func Query_DB(query string) (*api.QueryTableResult, error) {
 	queryAPI := Influx_Client.QueryAPI(INFLUX_ORG)
 	result, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
