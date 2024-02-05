@@ -24,6 +24,7 @@ var uuid_cache string
 
 func Logic_Setup() {
 	Load_Logic()
+	Query_Values()
 
 	ticker := time.NewTicker(time.Duration(logic_delay) * time.Second)
 	go func() {
