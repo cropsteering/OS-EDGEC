@@ -127,7 +127,6 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 								if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
 									delete(then_cache, uuid)
 									pause_logic = String_Delete(then_cache[uuid], pause_logic)
-									then_start = false
 									ticker.Stop()
 								}
 							}
