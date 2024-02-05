@@ -59,6 +59,7 @@ func logic_server(w http.ResponseWriter, r *http.Request) {
 		R_LOG("Invalid button")
 	}
 
+	Query_Values()
 	tmpl, err := template.New("logic").Parse(Build_Logic())
 	if err != nil {
 		R_LOG(err.Error())
