@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 	"time"
@@ -19,7 +18,7 @@ var Influx_Client influxdb2.Client
 var graph_cache = make(map[string]interface{})
 
 func Setup_Influxdb() {
-	log.Println("Starting InfluxDB")
+	R_LOG("Starting InfluxDB")
 	Influx_Client = influxdb2.NewClient(INFLUX_URL, INFLUX_TOKEN)
 	defer Influx_Client.Close()
 
@@ -29,9 +28,9 @@ func Setup_Influxdb() {
 
 	_, err := Influx_Client.Ping(ctx)
 	if err != nil {
-		log.Println("InfluxDB not connected", err)
+		R_LOG("InfluxDB not connected " + err.Error())
 	} else {
-		log.Println("InfluxDB connected")
+		R_LOG("InfluxDB connected")
 		Query_Topics()
 		Query_Values()
 	}
@@ -47,14 +46,14 @@ func Query_Topics() {
 	defer graph_mu.Unlock()
 	cached_array, err := Read_Array("topics.json")
 	if err != nil {
-		log.Println("Error reading array from file:", err)
+		R_LOG("Error reading array from file: " + err.Error())
 	} else {
 		f, err := os.Create("lineChart.html")
 		if err != nil {
-			log.Println(err)
+			R_LOG(err.Error())
 		} else {
 			f.WriteString("<center>Openly Automated</center>")
-			log.Println("Chart created: lineChart.html")
+			R_LOG("Chart created: lineChart.html")
 			for _, v := range cached_array {
 				if v != MQTT_STATUS && v != MQTT_CONFIG {
 					graph_cache = make(map[string]interface{})
@@ -63,11 +62,12 @@ func Query_Topics() {
 								|> range(start: -1h)
 								|> filter(fn: (r) => r["_measurement"] == "` + INFLUX_MEASUREMENT + `")
 								|> filter(fn: (r) => r["topic"] == "` + v + `")
+								|> filter(fn: (r) => r._field != "state")
 								|> yield(name: "mean")
 								`
 					results, err := Query_DB(flux_query)
 					if err != nil {
-						log.Println(err)
+						R_LOG(err.Error())
 					} else {
 						var influx_data []opts.LineData
 						var time_data []string
@@ -97,7 +97,7 @@ func Query_Topics() {
 						graph_cache["times"] = time_data
 
 						if results.Err() != nil {
-							log.Printf("Query processing error: %v\n", results.Err().Error())
+							R_LOG("Query processing error: " + results.Err().Error())
 						}
 
 						if graph_cache["name"] != nil {
@@ -128,7 +128,7 @@ func Query_Topics() {
 									SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: false}))
 							}
 							if err := line.Render(f); err != nil {
-								log.Println(err)
+								R_LOG(err.Error())
 							}
 						} else {
 							f.WriteString("Error loading graph data.")
@@ -142,12 +142,13 @@ func Query_Topics() {
 	}
 }
 
+// TODO: Fix when no values to read yet from influx
 func Query_Values() {
 	influx_mu.Lock()
 	defer influx_mu.Unlock()
 	cached_array, err := Read_Array("topics.json")
 	if err != nil {
-		log.Println("Error reading array:", err)
+		R_LOG("Error reading array: " + err.Error())
 	} else {
 		var topics_cache = make(map[string]interface{})
 		for _, v := range cached_array {
@@ -162,7 +163,7 @@ func Query_Values() {
 				`
 				results, err := Query_DB(flux_query)
 				if err != nil {
-					log.Println("Query:", err)
+					R_LOG("Query: " + err.Error())
 				} else {
 					var v_name string
 					for results.Next() {
@@ -179,9 +180,9 @@ func Query_Values() {
 		}
 		cache_err := Cache_Map(topics_cache, "values.json")
 		if cache_err != nil {
-			log.Println("Error caching array:", cache_err)
+			R_LOG("Error caching array: " + cache_err.Error())
 		} else {
-			log.Println("Loaded topics cache")
+			R_LOG("Loaded topics cache")
 		}
 	}
 }

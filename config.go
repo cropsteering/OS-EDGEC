@@ -15,3 +15,6 @@ var INFLUX_TOKEN = ""
 var INFLUX_ORG = ""
 var INFLUX_BUCKET = ""
 var INFLUX_MEASUREMENT = ""
+
+/** Debug Messages */
+var DEBUG = true

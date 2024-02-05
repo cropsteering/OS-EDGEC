@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +36,7 @@ func ingest_values(influxClient influxdb2.Client, topic, payload string) {
 		if Is_Float(value) {
 			floatValue, err := strconv.ParseFloat(value, 64)
 			if err != nil {
-				log.Printf("Value %s, %v", value, err)
+				R_LOG("Value " + value + "/" + err.Error())
 			} else {
 				p.AddField(fmt.Sprintf("value%d", i), floatValue)
 			}
@@ -49,6 +48,6 @@ func ingest_values(influxClient influxdb2.Client, topic, payload string) {
 
 	writeAPI := influxClient.WriteAPIBlocking(INFLUX_ORG, INFLUX_BUCKET)
 	if err := writeAPI.WritePoint(context.Background(), p); err != nil {
-		log.Println("Error writing to InfluxDB:", err)
+		R_LOG("Error writing to InfluxDB: " + err.Error())
 	}
 }

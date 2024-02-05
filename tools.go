@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 /**
@@ -31,7 +32,7 @@ func Cache_Map(data interface{}, file_path string) error {
 /**
 * Append string array to JSON
 * Write to file
-* TODO: Check to see if logic exists, duplicates
+* TODO: Append in reverse order
 *
  */
 func Append_Map(data map[string]interface{}, file_path string) error {
@@ -48,7 +49,7 @@ func Append_Map(data map[string]interface{}, file_path string) error {
 		if jerr != nil {
 			return jerr
 		} else {
-			AppendMaps(data_map, data)
+			join_maps(data_map, data)
 			json_data, jerr2 := json.MarshalIndent(data_map, "", "  ")
 			if jerr2 != nil {
 				return jerr2
@@ -63,7 +64,7 @@ func Append_Map(data map[string]interface{}, file_path string) error {
 	return nil
 }
 
-func AppendMaps(map1 map[string]interface{}, map2 map[string]interface{}) {
+func join_maps(map1 map[string]interface{}, map2 map[string]interface{}) {
 	for key, value := range map2 {
 		map1[key] = value
 	}
@@ -215,7 +216,7 @@ func Iterate_Map(input interface{}) (keys []string, values []interface{}) {
 			values = append(values, data[key])
 		}
 	default:
-		log.Println("Input is not a map[string]interface{}")
+		R_LOG("Input is not a map[string]interface{}")
 	}
 
 	return keys, values
@@ -230,7 +231,7 @@ func Iterate_Interface(data interface{}) []string {
 			temp = append(temp, temp_string)
 		}
 	default:
-		log.Println("Input is not a []interface{}")
+		R_LOG("Input is not a []interface{}")
 	}
 	return temp
 }
@@ -238,4 +239,44 @@ func Iterate_Interface(data interface{}) []string {
 func Is_Float(str string) bool {
 	_, err := strconv.ParseFloat(str, 64)
 	return err == nil
+}
+
+func Is_StringEmpty(s string) bool {
+	return strings.TrimSpace(s) == ""
+}
+
+func String_Exists(value string, slice []string) bool {
+	for _, element := range slice {
+		if element == value {
+			return true
+		}
+	}
+	return false
+}
+
+func String_Delete(value string, slice []string) []string {
+	indexToDelete := -1
+	for i, value_r := range slice {
+		if value_r == value {
+			indexToDelete = i
+			break
+		}
+	}
+
+	if indexToDelete != -1 {
+		slice = append(slice[:indexToDelete], slice[indexToDelete+1:]...)
+	}
+
+	return slice
+}
+
+func Key_Exists(key string, m map[string]string) bool {
+	_, exists := m[key]
+	return exists
+}
+
+func R_LOG(msg string) {
+	if DEBUG {
+		log.Println(msg)
+	}
 }

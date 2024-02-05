@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strconv"
 	"strings"
 )
@@ -70,6 +69,8 @@ var Logic_HTML_2 string = `
 			<option value='on'>ON</option>
 			<option value='off'>OFF</option>
 		</select>
+		<input type="checkbox" id="THEN" name="THEN" value="TRUE">
+		<label for="checkbox">THEN</label>
 		<br /><input type='submit' name='submit' value='Add'>
 		</form>
 		<script>
@@ -113,7 +114,7 @@ func Build_Logic() string {
 
 	values_array, err := Read_Interface("values.json")
 	if err != nil {
-		log.Println(err)
+		R_LOG(err.Error())
 	} else {
 		keys, _ := Iterate_Map(values_array)
 		for _, key := range keys {
@@ -136,7 +137,9 @@ func Build_Logic() string {
 				<label for='EQU'>IS </label>
 					<select name='EQU' id='EQU'>
 						<option value='less'>Less than</option>
+						<option value='lessequ'>Less than equal</option>
 						<option value='great'>Greater than</option>
+						<option value='greatequ'>Greater than equal</option>
 						<option value='equa'>Equal to</option>
 						<option value='nequa'>Not equal to</option>
 					</select>
@@ -158,7 +161,7 @@ func Build_Logic() string {
 
 	logic_array, err := Read_Interface("logic.json")
 	if err != nil {
-		log.Println(err)
+		R_LOG(err.Error())
 	} else {
 		s_builder.WriteString("	<table>\n")
 		s_builder.WriteString(`
@@ -171,6 +174,7 @@ func Build_Logic() string {
 					<th>Pin</th>
 					<th>Pin state</th>
 					<th>Power Controller</th>
+					<th>Then</th>
 					<th>Delete logic</th>
 				</tr>
 			</thead>
@@ -183,9 +187,7 @@ func Build_Logic() string {
 			for _, v_value := range temp_value {
 				s_builder.WriteString("				<td>" + v_value + "</td>\n")
 			}
-			s_builder.WriteString("<form method='POST'>")
-			s_builder.WriteString("				<td><input type='hidden' name='uuid' value='" + v_key + "'><input type='submit' name='submit' value='Delete'></td>\n")
-			s_builder.WriteString("</form>")
+			s_builder.WriteString("				<td><form method='POST'><input type='hidden' name='uuid' value='" + v_key + "'><input type='submit' name='submit' value='Delete'></form></td>\n")
 			s_builder.WriteString("			</tr>\n")
 		}
 		s_builder.WriteString("		</tbody>\n")

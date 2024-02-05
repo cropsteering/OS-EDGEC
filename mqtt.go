@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 	"time"
@@ -31,7 +30,7 @@ func Setup_MQTT() {
 	opts.OnConnectionLost = connectlost_handler
 	MQTT_CLIENT = mqtt.NewClient(opts)
 	if token := MQTT_CLIENT.Connect(); token.Wait() && token.Error() != nil {
-		log.Println(token.Error())
+		R_LOG(token.Error().Error())
 	}
 
 	if _, err := os.Stat("topics.json"); os.IsNotExist(err) {
@@ -39,12 +38,12 @@ func Setup_MQTT() {
 		mqtt_topics = append(mqtt_topics, MQTT_STATUS)
 		cerr := Cache_Array("topics.json", mqtt_topics)
 		if cerr != nil {
-			log.Println("Error caching data:", cerr)
+			R_LOG("Error caching data: " + cerr.Error())
 		}
 	} else {
 		topics, terr := Read_Array("topics.json")
 		if terr != nil {
-			log.Println(terr)
+			R_LOG(terr.Error())
 		} else {
 			mqtt_topics = topics
 		}
@@ -62,7 +61,7 @@ func NewTlsConfig() *tls.Config {
 	certpool := x509.NewCertPool()
 	ca, err := os.ReadFile("ca.pem")
 	if err != nil {
-		log.Fatalln(err.Error())
+		R_LOG(err.Error())
 	}
 	certpool.AppendCertsFromPEM(ca)
 	return &tls.Config{
@@ -80,7 +79,7 @@ func Mqtt_Publish(topic string, msg string) {
 		text := fmt.Sprint(msg)
 		token := MQTT_CLIENT.Publish(topic, 0, false, text)
 		token.Wait()
-		log.Printf("MQTT publish: %s to %s", msg, topic)
+		R_LOG("MQTT publish: " + msg + "/" + topic)
 		time.Sleep(time.Second)
 	}
 }
@@ -92,9 +91,9 @@ func Mqtt_Publish(topic string, msg string) {
 func mqtt_sub(client mqtt.Client, topic string) {
 	if MQTT_CONNECTED {
 		if token := client.Subscribe(topic, 0, nil); token.Wait() && token.Error() != nil {
-			log.Println("MQTT Token", token.Error())
+			R_LOG("MQTT Token " + token.Error().Error())
 		} else {
-			log.Printf("Subscribed to %s", topic)
+			R_LOG("Subscribed to " + topic)
 		}
 	}
 }
@@ -104,12 +103,13 @@ func mqtt_sub(client mqtt.Client, topic string) {
 *
  */
 var messagepub_handler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	log.Printf("MQTT recieved: %s, topic: %s\n", msg.Payload(), msg.Topic())
+	rec_msg := fmt.Sprintf("MQTT recieved: %s, topic: %s", msg.Payload(), msg.Topic())
+	R_LOG(rec_msg)
 	switch msg.Topic() {
 	case MQTT_CONFIG:
-		log.Println("Config msg")
+		R_LOG("Config msg")
 	case MQTT_STATUS:
-		log.Println("Status msg")
+		R_LOG("Status msg")
 	default:
 		Ingest_MQTT(Influx_Client, msg.Topic(), string(msg.Payload()))
 	}
@@ -126,7 +126,7 @@ func MQTT_Disco(topic string) {
 	if Enable_Disco {
 		contains := slices.Contains(mqtt_topics, topic)
 		if !contains {
-			log.Println("New topic: ", topic)
+			R_LOG("New topic: " + topic)
 			mqtt_topics = append(mqtt_topics, topic)
 			Append_String("topics.json", topic)
 			Query_Values()
@@ -140,7 +140,7 @@ func MQTT_Disco(topic string) {
 *
  */
 var connect_handler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	log.Println("MQTT Connected")
+	R_LOG("MQTT Connected")
 	MQTT_CONNECTED = true
 }
 
@@ -149,6 +149,6 @@ var connect_handler mqtt.OnConnectHandler = func(client mqtt.Client) {
 *
  */
 var connectlost_handler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	log.Printf("MQTT Disconnected: %v", err)
+	R_LOG("MQTT Disconnected: " + err.Error())
 	MQTT_CONNECTED = false
 }
