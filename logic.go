@@ -1,6 +1,5 @@
 /**
-* TODO: Add edit and cloning, weight, get powerc name automatically,
-* if state already exists, dont do anything
+* TODO: Add edit and cloning, weight, get powerc name automatically
 *
  */
 
@@ -21,6 +20,8 @@ var then_start bool = false
 var pause_logic []string
 var then_cache = make(map[string]string)
 var uuid_cache string
+var high_weight int
+var weight_list = make(map[string]int)
 
 func Logic_Setup() {
 	Load_Logic()
@@ -61,13 +62,17 @@ func Logic_Loop() {
 				if err2 != nil {
 					R_LOG(err2.Error())
 				}
-				run_logic(slice[0], slice[1], slice[2], reading_i, pin_i, slice[5], slice[6], slice[7], uuid)
+				weight_i, err3 := strconv.Atoi(slice[8])
+				if err3 != nil {
+					R_LOG(err3.Error())
+				}
+				run_logic(slice[0], slice[1], slice[2], reading_i, pin_i, slice[5], slice[6], slice[7], uuid, weight_i)
 			}
 		}
 	}
 }
 
-func run_logic(sen_name string, val_name string, equ string, reading int, pin int, state string, powerc string, then string, uuid string) {
+func run_logic(sen_name string, val_name string, equ string, reading int, pin int, state string, powerc string, then string, uuid string, weight int) {
 	flux_query := `
 	from(bucket: "` + INFLUX_BUCKET + `")
 	|> range(start: -1h)
@@ -76,6 +81,10 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 	|> filter(fn: (r) => r["_field"] == "` + val_name + `")
 	|> last()
 	`
+
+	if !Key_Exists_Int(uuid, weight_list) {
+		weight_list[uuid] = weight
+	}
 
 	if then == "TRUE" {
 		B_THEN = true
@@ -108,7 +117,7 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 			}
 		}
 	} else {
-		if !Key_Exists(uuid, then_cache) {
+		if !Key_Exists_String(uuid, then_cache) {
 			then_cache[uuid] = uuid_cache
 			go func() {
 				ticker := time.NewTicker(time.Duration(logic_delay) * time.Second)
@@ -125,8 +134,8 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 								R_LOG(err.Error())
 							} else {
 								if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
-									delete(then_cache, uuid)
 									pause_logic = String_Delete(then_cache[uuid], pause_logic)
+									delete(then_cache, uuid)
 									ticker.Stop()
 								}
 							}

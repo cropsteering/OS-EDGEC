@@ -32,7 +32,6 @@ func Cache_Map(data interface{}, file_path string) error {
 /**
 * Append string array to JSON
 * Write to file
-* TODO: Append in reverse order
 *
  */
 func Append_Map(data map[string]interface{}, file_path string) error {
@@ -254,23 +253,37 @@ func String_Exists(value string, slice []string) bool {
 	return false
 }
 
+func Int_Exists(value int, slice []int) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
 func String_Delete(value string, slice []string) []string {
-	indexToDelete := -1
-	for i, value_r := range slice {
-		if value_r == value {
-			indexToDelete = i
+	index := -1
+	for i, v := range slice {
+		if v == value {
+			index = i
 			break
 		}
 	}
 
-	if indexToDelete != -1 {
-		slice = append(slice[:indexToDelete], slice[indexToDelete+1:]...)
+	if index != -1 {
+		return append(slice[:index], slice[index+1:]...)
 	}
 
 	return slice
 }
 
-func Key_Exists(key string, m map[string]string) bool {
+func Key_Exists_String(key string, m map[string]string) bool {
+	_, exists := m[key]
+	return exists
+}
+
+func Key_Exists_Int(key string, m map[string]int) bool {
 	_, exists := m[key]
 	return exists
 }

@@ -142,7 +142,6 @@ func Query_Topics() {
 	}
 }
 
-// TODO: Fix when no values to read yet from influx
 func Query_Values() {
 	influx_mu.Lock()
 	defer influx_mu.Unlock()

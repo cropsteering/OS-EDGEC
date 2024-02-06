@@ -63,7 +63,6 @@ var Logic_HTML_1 string = `
 `
 
 var Logic_HTML_2 string = `
-			</select>
 		<label for='STATUS'> </label>
 		<select name='STATUS' id='STATUS'>
 			<option value='on'>ON</option>
@@ -71,39 +70,39 @@ var Logic_HTML_2 string = `
 		</select>
 		<input type="checkbox" id="THEN" name="THEN" value="TRUE">
 		<label for="checkbox">THEN</label>
-		<br /><input type='submit' name='submit' value='Add'>
-		</form>
-		<script>
-			function update() {
-				var reading_drop = document.getElementById("READING");
-				var sensor_drop = document.getElementById("SENSOR");
-				var selected = sensor_drop.value;
-				for (var i = 0; i < reading_drop.options.length; i++) {
-					var option = reading_drop.options[i];
-					if (option.getAttribute('data-group') == selected) {
-						option.style.display = 'block';
-					} else {
-						option.style.display = 'none';
-					}
-				}
-			}
-			window.onload = update;
-
-			function validateInput(input) {
-				let numericValue = input.value.replace(/[^0-9]/g, '');
-			
-				numericValue = Math.min(15000, Math.max(0, numericValue));
-			
-				input.value = numericValue;
-			
-				const placeholderText = "Enter numbers (0-15000)";
-				input.placeholder = input.value.length === 0 ? placeholderText : "";
-			  }
-		</script>
 `
 
 var Logic_HTML_END = `
+	<br /><input type='submit' name='submit' value='Add'><br />
+	</form>
 	<br /><a href='index.html'><button>Back to dashboard</button></a>
+	<script>
+	function update() {
+		var reading_drop = document.getElementById("READING");
+		var sensor_drop = document.getElementById("SENSOR");
+		var selected = sensor_drop.value;
+		for (var i = 0; i < reading_drop.options.length; i++) {
+			var option = reading_drop.options[i];
+			if (option.getAttribute('data-group') == selected) {
+				option.style.display = 'block';
+			} else {
+				option.style.display = 'none';
+			}
+		}
+	}
+	window.onload = update;
+
+	function validateInput(input) {
+		let numericValue = input.value.replace(/[^0-9]/g, '');
+	
+		numericValue = Math.min(15000, Math.max(0, numericValue));
+	
+		input.value = numericValue;
+	
+		const placeholderText = "Enter numbers (0-15000)";
+		input.placeholder = input.value.length === 0 ? placeholderText : "";
+	  }
+</script>
 </body>
 </html>
 `
@@ -153,9 +152,20 @@ func Build_Logic() string {
 			str := strconv.Itoa(x)
 			s_builder.WriteString("				<option value='" + str + "'>" + str + "</option>\n")
 		}
+		s_builder.WriteString("			</select>")
 	}
 
 	s_builder.WriteString(Logic_HTML_2)
+
+	s_builder.WriteString(`
+			<label for='WEIGHT'>| WEIGHT </label>
+				<select name='WEIGHT' id='WEIGHT'>
+	`)
+	for x := 0; x <= 100; x++ {
+		str := strconv.Itoa(x)
+		s_builder.WriteString("				<option value='" + str + "'>" + str + "</option>\n")
+	}
+	s_builder.WriteString("			</select>")
 
 	s_builder.WriteString("	<br /><br />\n")
 
@@ -175,6 +185,7 @@ func Build_Logic() string {
 					<th>Pin state</th>
 					<th>Power Controller</th>
 					<th>Then</th>
+					<th>Weight</th>
 					<th>Delete logic</th>
 				</tr>
 			</thead>

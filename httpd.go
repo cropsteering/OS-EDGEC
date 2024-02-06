@@ -105,6 +105,7 @@ func add_logic(r *http.Request) {
 		} else {
 			temp = append(temp, r.FormValue("THEN"))
 		}
+		temp = append(temp, r.FormValue("WEIGHT"))
 		temp_map[UUID.String()] = temp
 		temp_err := Append_Map(temp_map, "logic.json")
 		if temp_err != nil {
