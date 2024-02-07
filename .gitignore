@@ -32,3 +32,6 @@ logic.html
 topics.JSON
 values.JSON
 logic.JSON
+
+.vscode
+.DS_Store

@@ -1,0 +1,54 @@
+version: '3'
+services:
+  controller:
+    build: .
+    ports:
+      - "8081:8081"
+    depends_on:
+      mqtt:
+        condition: service_started
+      influxdb:
+          condition: service_healthy
+
+  mqtt:
+    image: emqx/emqx:5.5.0
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+      - "8084:8084"
+      - "8883:8883"
+      - "18083:18083"
+    environment:
+      foo: bar
+    volumes:
+      - emqx-data:/opt/emqx/data
+  
+  influxdb:
+    image: influxdb:2.0
+    privileged: true
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=oss-user
+      - DOCKER_INFLUXDB_INIT_PASSWORD=oss-password
+      - DOCKER_INFLUXDB_INIT_ORG=oss-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=oss-bucket
+      - DOCKER_INFLUXDB_INIT_RETENTION=1w
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    healthcheck:
+      test: "curl -f http://localhost:8086/ping"
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  emqx-data:
+  influxdb-data:
+  influxdb-config:
+
+
+
