@@ -9,8 +9,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var height_mu sync.Mutex
+var pause_mu sync.Mutex
 
 var logic_delay = 5
 var logic_cache []map[string]interface{}
@@ -20,7 +24,7 @@ var then_start bool = false
 var pause_logic []string
 var then_cache = make(map[string]string)
 var uuid_cache string
-var high_weight int
+var high_weight int = 0
 var weight_list = make(map[string]int)
 
 func Logic_Setup() {
@@ -86,6 +90,10 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 		weight_list[uuid] = weight
 	}
 
+	if weight > high_weight {
+		high_weight = weight
+	}
+
 	if then == "TRUE" {
 		B_THEN = true
 	} else {
@@ -104,15 +112,23 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 				if err != nil {
 					R_LOG(err.Error())
 				} else {
+					pause_mu.Lock()
 					if !String_Exists(uuid, pause_logic) {
-						if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
-							if B_THEN {
-								pause_logic = append(pause_logic, uuid)
-								then_start = true
-								uuid_cache = uuid
+						if weight >= high_weight {
+							if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
+								if B_THEN {
+									pause_logic = append(pause_logic, uuid)
+									then_start = true
+									uuid_cache = uuid
+								} else {
+									height_mu.Lock()
+									high_weight = 0
+									height_mu.Unlock()
+								}
 							}
 						}
 					}
+					pause_mu.Unlock()
 				}
 			}
 		}
@@ -134,8 +150,13 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 								R_LOG(err.Error())
 							} else {
 								if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
+									pause_mu.Lock()
 									pause_logic = String_Delete(then_cache[uuid], pause_logic)
+									pause_mu.Unlock()
 									delete(then_cache, uuid)
+									height_mu.Lock()
+									high_weight = 0
+									height_mu.Unlock()
 									ticker.Stop()
 								}
 							}
