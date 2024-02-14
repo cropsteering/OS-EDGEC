@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 /**
@@ -35,38 +37,36 @@ func Cache_Map(data interface{}, file_path string) error {
 *
  */
 func Append_Map(data map[string]interface{}, file_path string) error {
-	jsonData, err := os.ReadFile(file_path)
+	json_data, err := os.ReadFile(file_path)
 	if err != nil {
-		c_err := Cache_Map(data, file_path)
-		if c_err != nil {
-			return c_err
+		if os.IsNotExist(err) {
+			return Cache_Map(data, file_path)
 		}
 		return err
-	} else {
-		var data_map map[string]interface{}
-		jerr := json.Unmarshal(jsonData, &data_map)
-		if jerr != nil {
-			return jerr
-		} else {
-			join_maps(data_map, data)
-			json_data, jerr2 := json.MarshalIndent(data_map, "", "  ")
-			if jerr2 != nil {
-				return jerr2
-			} else {
-				ferr := os.WriteFile(file_path, json_data, 0644)
-				if ferr != nil {
-					return ferr
-				}
-			}
-		}
 	}
-	return nil
-}
 
-func join_maps(map1 map[string]interface{}, map2 map[string]interface{}) {
-	for key, value := range map2 {
-		map1[key] = value
+	ejson_map := orderedmap.New[string, interface{}]()
+
+	if err := json.Unmarshal(json_data, &ejson_map); err != nil {
+		R_LOG("Error: " + err.Error())
+		return err
 	}
+
+	for key, value := range data {
+		ejson_map.Set(key, value)
+	}
+
+	json_data, err = json.MarshalIndent(ejson_map, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(file_path, json_data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /**

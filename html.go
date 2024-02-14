@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
 	"strconv"
 	"strings"
+
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 var Disco_HTML string = `
@@ -169,9 +173,9 @@ func Build_Logic() string {
 
 	s_builder.WriteString("	<br /><br />\n")
 
-	logic_array, err := Read_Interface("logic.json")
+	json_data, err := os.ReadFile("logic.json")
 	if err != nil {
-		R_LOG(err.Error())
+		R_LOG("Error: " + err.Error())
 	} else {
 		s_builder.WriteString("	<table>\n")
 		s_builder.WriteString(`
@@ -191,18 +195,25 @@ func Build_Logic() string {
 			</thead>
 		`)
 		s_builder.WriteString("	<tbody>\n")
-		v_keys, v_values := Iterate_Map(logic_array)
-		for v_index, v_key := range v_keys {
-			temp_value := Iterate_Interface(v_values[v_index])
-			s_builder.WriteString("			<tr>\n")
-			for _, v_value := range temp_value {
-				s_builder.WriteString("				<td>" + v_value + "</td>\n")
+
+		json_map := orderedmap.New[string, []string]()
+
+		if err := json.Unmarshal(json_data, &json_map); err != nil {
+			R_LOG("Error: " + err.Error())
+		} else {
+			for el := json_map.Oldest(); el != nil; el = el.Next() {
+				s_builder.WriteString("			<tr>\n")
+				uuid := el.Key
+				logic_slice := el.Value
+				for _, l_value := range logic_slice {
+					s_builder.WriteString("				<td>" + l_value + "</td>\n")
+				}
+				s_builder.WriteString("				<td><form method='POST'><input type='hidden' name='uuid' value='" + uuid + "'><input type='submit' name='submit' value='Delete'></form></td>\n")
+				s_builder.WriteString("			</tr>\n")
 			}
-			s_builder.WriteString("				<td><form method='POST'><input type='hidden' name='uuid' value='" + v_key + "'><input type='submit' name='submit' value='Delete'></form></td>\n")
-			s_builder.WriteString("			</tr>\n")
+			s_builder.WriteString("		</tbody>\n")
+			s_builder.WriteString("	</table>\n")
 		}
-		s_builder.WriteString("		</tbody>\n")
-		s_builder.WriteString("	</table>\n")
 	}
 
 	s_builder.WriteString(Logic_HTML_END)

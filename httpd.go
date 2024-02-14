@@ -56,7 +56,7 @@ func logic_server(w http.ResponseWriter, r *http.Request) {
 		R_LOG("Deleting logic")
 		del_logic(r)
 	default:
-		R_LOG("Invalid button")
+		// Ignore
 	}
 
 	Query_Values()
