@@ -84,6 +84,7 @@ func del_logic(r *http.Request) {
 		if temp_err != nil {
 			R_LOG(temp_err.Error())
 		}
+		Reset_Logic()
 		Load_Logic()
 	}
 }
@@ -113,6 +114,7 @@ func add_logic(r *http.Request) {
 		}
 		temp = nil
 		temp_map = nil
+		Reset_Logic()
 		Load_Logic()
 	}
 }

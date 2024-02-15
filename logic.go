@@ -40,6 +40,12 @@ func Logic_Setup() {
 	}()
 }
 
+func Reset_Logic() {
+	lcache_mu.Lock()
+	logic_cache = nil
+	lcache_mu.Unlock()
+}
+
 func Load_Logic() {
 	logic_json, err := Read_Map("logic.json")
 	if err != nil {
