@@ -1,0 +1,21 @@
+package main
+
+/** MQTT Info */
+
+var MQTT_BROKER = "mqtt"
+var MQTT_ID = "EdgeC"
+var MQTT_USER = ""
+var MQTT_PASSWORD = ""
+var MQTT_CONFIG = MQTT_USER + "/" + MQTT_ID + "/config"
+var MQTT_STATUS = MQTT_USER + "/" + MQTT_ID + "/status"
+var MQTT_PORT = 8883
+
+/** InfluxDB Info */
+var INFLUX_URL = "http://influxdb:8086"
+var INFLUX_TOKEN = "my-super-secret-auth-token"
+var INFLUX_ORG = "oss-org"
+var INFLUX_BUCKET = "oss-bucket"
+var INFLUX_MEASUREMENT = ""
+
+/** Debug Messages */
+var DEBUG = true
