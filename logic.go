@@ -13,8 +13,10 @@ import (
 	"time"
 )
 
-var height_mu sync.Mutex
+var high_mu sync.Mutex
 var pause_mu sync.Mutex
+var lcache_mu sync.Mutex
+var state_mu sync.Mutex
 
 var logic_delay = 5
 var logic_cache []map[string]interface{}
@@ -22,7 +24,7 @@ var state_cache = make(map[int]interface{})
 var B_THEN bool = false
 var then_start bool = false
 var pause_logic []string
-var then_cache = make(map[string]string)
+var then_cache []string
 var uuid_cache string
 var high_weight int = 0
 var weight_list = make(map[string]int)
@@ -48,13 +50,16 @@ func Load_Logic() {
 			temp_map := make(map[string]interface{})
 			temp_value := Iterate_Interface(v_values[v_index])
 			temp_map[v_name] = temp_value
+			lcache_mu.Lock()
 			logic_cache = append(logic_cache, temp_map)
+			lcache_mu.Unlock()
 			temp_map = nil
 		}
 	}
 }
 
 func Logic_Loop() {
+	lcache_mu.Lock()
 	for _, v := range logic_cache {
 		for uuid, values := range v {
 			if slice, ok := values.([]string); ok {
@@ -74,6 +79,7 @@ func Logic_Loop() {
 			}
 		}
 	}
+	lcache_mu.Unlock()
 }
 
 func run_logic(sen_name string, val_name string, equ string, reading int, pin int, state string, powerc string, then string, uuid string, weight int) {
@@ -90,9 +96,11 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 		weight_list[uuid] = weight
 	}
 
+	high_mu.Lock()
 	if weight > high_weight {
 		high_weight = weight
 	}
+	high_mu.Unlock()
 
 	if then == "TRUE" {
 		B_THEN = true
@@ -114,6 +122,7 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 				} else {
 					pause_mu.Lock()
 					if !String_Exists(uuid, pause_logic) {
+						high_mu.Lock()
 						if weight >= high_weight {
 							if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
 								if B_THEN {
@@ -121,51 +130,54 @@ func run_logic(sen_name string, val_name string, equ string, reading int, pin in
 									then_start = true
 									uuid_cache = uuid
 								} else {
-									height_mu.Lock()
 									high_weight = 0
-									height_mu.Unlock()
 								}
 							}
 						}
+						high_mu.Unlock()
 					}
 					pause_mu.Unlock()
 				}
 			}
 		}
 	} else {
-		if !Key_Exists_String(uuid, then_cache) {
-			then_cache[uuid] = uuid_cache
-			go func() {
-				ticker := time.NewTicker(time.Duration(logic_delay) * time.Second)
-				for range ticker.C {
-					results, err := Query_DB(flux_query)
-					if err != nil {
-						R_LOG(err.Error())
-					} else {
-						for results.Next() {
-							db_value := fmt.Sprintf("%f", results.Record().Value())
-							db_fvalue, err := strconv.ParseFloat(db_value, 64)
-							f_reading := float64(reading)
-							if err != nil {
-								R_LOG(err.Error())
-							} else {
-								if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
-									pause_mu.Lock()
-									pause_logic = String_Delete(then_cache[uuid], pause_logic)
-									pause_mu.Unlock()
-									delete(then_cache, uuid)
-									height_mu.Lock()
-									high_weight = 0
-									height_mu.Unlock()
-									ticker.Stop()
-								}
-							}
-						}
-					}
-				}
-			}()
+		if !String_Exists(uuid_cache, then_cache) {
+			then_cache = append(then_cache, uuid_cache)
+			go then_logic(uuid_cache, flux_query, sen_name, equ, reading, pin, state, powerc, weight)
 		}
 		then_start = false
+	}
+}
+
+func then_logic(temp_uuid string, flux_query string, sen_name string, equ string, reading int, pin int, state string, powerc string, weight int) {
+	ticker := time.NewTicker(time.Duration(logic_delay) * time.Second)
+	for range ticker.C {
+		results, err := Query_DB(flux_query)
+		if err != nil {
+			R_LOG(err.Error())
+		} else {
+			for results.Next() {
+				db_value := fmt.Sprintf("%f", results.Record().Value())
+				db_fvalue, err := strconv.ParseFloat(db_value, 64)
+				f_reading := float64(reading)
+				if err != nil {
+					R_LOG(err.Error())
+				} else {
+					if run_equations(equ, db_fvalue, f_reading, sen_name, state, pin, powerc) {
+						pause_mu.Lock()
+						pause_logic = String_Delete(temp_uuid, pause_logic)
+						pause_mu.Unlock()
+						then_cache = String_Delete(temp_uuid, then_cache)
+						high_mu.Lock()
+						if weight >= high_weight {
+							high_weight = 0
+						}
+						high_mu.Unlock()
+						ticker.Stop()
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -209,6 +221,7 @@ func run_equations(equ string, db_fvalue float64, f_reading float64, sen_name st
 
 func pin_switch(sen_name string, state string, pin int, powerc string) {
 	parts := strings.Split(sen_name, "/")
+	state_mu.Lock()
 	if value, exists := state_cache[pin]; exists && value == state {
 		// Ignore
 	} else {
@@ -225,4 +238,5 @@ func pin_switch(sen_name string, state string, pin int, powerc string) {
 			state_cache[pin] = state
 		}
 	}
+	state_mu.Unlock()
 }
