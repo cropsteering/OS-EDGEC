@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
@@ -286,6 +287,27 @@ func Key_Exists_String(key string, m map[string]string) bool {
 func Key_Exists_Int(key string, m map[string]int) bool {
 	_, exists := m[key]
 	return exists
+}
+
+func StringToWeekday(s string) (time.Weekday, error) {
+	switch strings.ToLower(s) {
+	case "sunday":
+		return time.Sunday, nil
+	case "monday":
+		return time.Monday, nil
+	case "tuesday":
+		return time.Tuesday, nil
+	case "wednesday":
+		return time.Wednesday, nil
+	case "thursday":
+		return time.Thursday, nil
+	case "friday":
+		return time.Friday, nil
+	case "saturday":
+		return time.Saturday, nil
+	default:
+		return 0, fmt.Errorf("invalid weekday: %s", s)
+	}
 }
 
 func R_LOG(msg string) {

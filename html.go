@@ -111,6 +111,94 @@ var Logic_HTML_END = `
 </html>
 `
 
+var Sched_HTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule On/Off Event</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    label {
+        margin-bottom: 10px;
+    }
+    select {
+        width: 200px;
+        padding: 5px;
+        font-size: 16px;
+    }
+	.hidden-option {
+		display: none;
+	}
+	table {
+		border: 1px solid black;
+		border-collapse: collapse;
+		width: 25%;
+	}
+	td, th {
+		border: 1px solid black;
+		padding: 8px;
+		text-align: left;
+	}
+    .time-picker input {
+        padding: 8px;
+        font-size: 16px;
+        width: 50px;
+		display: inline-block;
+        margin-right: 10px;
+    }
+</style>
+</head>
+<body>
+
+<h2>Schedule Event</h2>
+
+<form method='POST'>
+	<label>Power Controller:</label>
+	<input type='text' name='POWERC'>
+	<label>Zone:</label>
+	<input type='text' name='ZONE'><br /><br />
+    <label for="dayOfWeek">Day of the Week:</label>
+    <select id="dayOfWeek" name="dayOfWeek">
+        <option value="sunday">Sunday</option>
+        <option value="monday">Monday</option>
+        <option value="tuesday">Tuesday</option>
+        <option value="wednesday">Wednesday</option>
+        <option value="thursday">Thursday</option>
+        <option value="friday">Friday</option>
+        <option value="saturday">Saturday</option>
+    </select>
+	<br><br>
+	<div class="time-picker">
+    	<label for="hours">Hours (24):</label>
+		<input type="text" id="hours" name="hours" placeholder="HH" maxlength="2">
+
+		<label for="minutes">Minutes:</label>
+		<input type="text" id="minutes" name="minutes" placeholder="MM" maxlength="2">
+	</div>
+`
+
+var Sched_HTML_2 = `
+<label for='STATUS'> </label>
+<select name='STATUS' id='STATUS'>
+	<option value='on'>ON</option>
+	<option value='off'>OFF</option>
+</select>
+<br><br>
+<input type='submit' name='submit' value='Add'>
+</form>
+`
+
+var Sched_HTML_END = `
+<br /><a href='index.html'><button>Back to dashboard</button></a>
+
+</body>
+</html>
+`
+
 func Build_Logic() string {
 	var s_builder strings.Builder
 	s_builder.WriteString(Logic_HTML_1)
@@ -217,6 +305,68 @@ func Build_Logic() string {
 	}
 
 	s_builder.WriteString(Logic_HTML_END)
+
+	return s_builder.String()
+}
+
+func Build_Sched() string {
+	var s_builder strings.Builder
+
+	s_builder.WriteString(Sched_HTML)
+
+	s_builder.WriteString(`
+	<br><br>
+	<label for='PIN'>Turn PIN </label>
+		<select name='PIN' id='PIN'>
+	`)
+	for x := 0; x <= 50; x++ {
+		str := strconv.Itoa(x)
+		s_builder.WriteString("<option value='" + str + "'>" + str + "</option>\n")
+	}
+	s_builder.WriteString("</select>")
+	s_builder.WriteString(Sched_HTML_2)
+
+	json_data, err := os.ReadFile("sched.json")
+	if err != nil {
+		R_LOG("Error: " + err.Error())
+	} else {
+		s_builder.WriteString("<br><table>\n")
+		s_builder.WriteString(`
+			<thead>
+				<tr>
+					<th>Day</th>
+					<th>Time (24hr)</th>
+					<th>Pin</th>
+					<th>Pin Status</th>
+					<th>Power Controller</th>
+					<th>Zone</th>
+					<th>Delete Schedule</th>
+				</tr>
+			</thead>
+		`)
+		s_builder.WriteString("<tbody>\n")
+
+		json_map := orderedmap.New[string, []string]()
+
+		if err := json.Unmarshal(json_data, &json_map); err != nil {
+			R_LOG("Error: " + err.Error())
+		} else {
+			for el := json_map.Oldest(); el != nil; el = el.Next() {
+				s_builder.WriteString("<tr>\n")
+				uuid := el.Key
+				logic_slice := el.Value
+				for _, l_value := range logic_slice {
+					s_builder.WriteString("<td>" + l_value + "</td>\n")
+				}
+				s_builder.WriteString("<td><form method='POST'><input type='hidden' name='uuid' value='" + uuid + "'><input type='submit' name='submit' value='Delete'></form></td>\n")
+				s_builder.WriteString("</tr>\n")
+			}
+			s_builder.WriteString("</tbody>\n")
+			s_builder.WriteString("</table>\n")
+		}
+	}
+
+	s_builder.WriteString(Sched_HTML_END)
 
 	return s_builder.String()
 }

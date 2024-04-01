@@ -17,6 +17,7 @@ func Setup_Http() {
 	http.HandleFunc("/", index_server)
 	http.HandleFunc("/graphs", graph_server)
 	http.HandleFunc("/logic", logic_server)
+	http.HandleFunc("/sched", sched_server)
 	http.HandleFunc("/disco", disco_server)
 	err := http.ListenAndServe(":8081", nil)
 	if err != nil {
@@ -116,6 +117,82 @@ func add_logic(r *http.Request) {
 		temp_map = nil
 		Reset_Logic()
 		Load_Logic()
+	}
+}
+
+func sched_server(w http.ResponseWriter, r *http.Request) {
+	R_LOG("HTTP Request, schedule")
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusInternalServerError)
+		return
+	}
+
+	button_name := r.FormValue("submit")
+
+	switch button_name {
+	case "Add":
+		R_LOG("Adding schedule")
+		add_sched(r)
+	case "Delete":
+		R_LOG("Deleting schedule")
+		del_sched(r)
+	default:
+		// Ignore
+	}
+
+	tmpl, err := template.New("sched").Parse(Build_Sched())
+	if err != nil {
+		R_LOG(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		err = tmpl.ExecuteTemplate(w, "sched", "")
+		if err != nil {
+			R_LOG(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+}
+
+func add_sched(r *http.Request) {
+	if r.Method == http.MethodPost {
+		UUID := uuid.New()
+		var temp []string
+		var temp_map = make(map[string]interface{})
+		temp = append(temp, r.FormValue("dayOfWeek"))
+		combine_time := r.FormValue("hours") + r.FormValue("minutes")
+
+		temp = append(temp, combine_time)
+		temp = append(temp, r.FormValue("PIN"))
+		temp = append(temp, r.FormValue("STATUS"))
+		temp = append(temp, r.FormValue("POWERC"))
+		temp = append(temp, r.FormValue("ZONE"))
+
+		temp_map[UUID.String()] = temp
+		temp_err := Append_Map(temp_map, "sched.json")
+		if temp_err != nil {
+			R_LOG(temp_err.Error())
+		}
+		temp = nil
+		temp_map = nil
+		Reset_Sched()
+		Load_Sched()
+	}
+}
+
+func del_sched(r *http.Request) {
+	sched_json, err := Read_Map("sched.json")
+	if err != nil {
+		R_LOG(err.Error())
+	} else {
+		delete(sched_json, r.FormValue("uuid"))
+		temp_err := Cache_Map(sched_json, "sched.json")
+		if temp_err != nil {
+			R_LOG(temp_err.Error())
+		}
+		Reset_Sched()
+		Load_Sched()
 	}
 }
 
