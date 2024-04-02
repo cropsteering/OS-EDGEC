@@ -19,6 +19,8 @@ var graph_cache = make(map[string]interface{})
 
 func Setup_Influxdb() {
 	R_LOG("Starting InfluxDB")
+	influx_mu.Lock()
+
 	Influx_Client = influxdb2.NewClient(INFLUX_URL, INFLUX_TOKEN)
 	defer Influx_Client.Close()
 
@@ -33,6 +35,22 @@ func Setup_Influxdb() {
 		R_LOG("InfluxDB connected")
 		Query_Topics()
 	}
+	influx_mu.Unlock()
+
+	go func() {
+		for {
+			influx_mu.Lock()
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_, err := Influx_Client.Ping(ctx)
+			if err != nil {
+				R_LOG("InfluxDB not connected" + err.Error())
+				Influx_Client = influxdb2.NewClient(INFLUX_URL, INFLUX_TOKEN)
+			}
+			cancel()
+			influx_mu.Unlock()
+			time.Sleep(1 * time.Minute)
+		}
+	}()
 }
 
 /**
@@ -181,8 +199,8 @@ func Query_Values() {
 		if is_empty {
 			R_LOG("No values found, trying again in 1 minute.")
 			go func() {
-				R_LOG("Querying values")
 				time.Sleep(1 * time.Minute)
+				R_LOG("Querying values")
 				Query_Values()
 			}()
 		} else {
