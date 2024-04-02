@@ -76,7 +76,7 @@ func Load_Logic() {
 		v_keys, v_values := Iterate_Map(logic_json)
 		for v_index, v_name := range v_keys {
 			temp_map := make(map[string]interface{})
-			temp_value := Iterate_Interface(v_values[v_index])
+			temp_value, _ := Iterate_Interface(v_values[v_index])
 			temp_map[v_name] = temp_value
 			lcache_mu.Lock()
 			logic_cache = append(logic_cache, temp_map)
@@ -94,7 +94,7 @@ func Load_Sched() {
 		v_keys, v_values := Iterate_Map(sched_json)
 		for v_index, v_name := range v_keys {
 			temp_map := make(map[string]interface{})
-			temp_value := Iterate_Interface(v_values[v_index])
+			temp_value, _ := Iterate_Interface(v_values[v_index])
 			temp_map[v_name] = temp_value
 			scache_mu.Lock()
 			sched_cache = append(sched_cache, temp_map)

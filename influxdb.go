@@ -32,7 +32,6 @@ func Setup_Influxdb() {
 	} else {
 		R_LOG("InfluxDB connected")
 		Query_Topics()
-		Query_Values()
 	}
 }
 
@@ -150,6 +149,7 @@ func Query_Values() {
 		R_LOG("Error reading array: " + err.Error())
 	} else {
 		var topics_cache = make(map[string]interface{})
+		is_empty := true
 		for _, v := range cached_array {
 			if v != MQTT_STATUS && v != MQTT_CONFIG {
 				var value_names []string
@@ -171,17 +171,27 @@ func Query_Values() {
 						if !contains {
 							value_names = append(value_names, v_name)
 						}
+						is_empty = false
 					}
 				}
 				topics_cache[v] = value_names
 				value_names = nil
 			}
 		}
-		cache_err := Cache_Map(topics_cache, "values.json")
-		if cache_err != nil {
-			R_LOG("Error caching array: " + cache_err.Error())
+		if is_empty {
+			R_LOG("No values found, trying again in 1 minute.")
+			go func() {
+				R_LOG("Querying values")
+				time.Sleep(1 * time.Minute)
+				Query_Values()
+			}()
 		} else {
-			R_LOG("Loaded topics cache")
+			cache_err := Cache_Map(topics_cache, "values.json")
+			if cache_err != nil {
+				R_LOG("Error caching array: " + cache_err.Error())
+			} else {
+				R_LOG("Loaded topics cache")
+			}
 		}
 	}
 }

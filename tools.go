@@ -216,13 +216,13 @@ func Iterate_Map(input interface{}) (keys []string, values []interface{}) {
 			values = append(values, data[key])
 		}
 	default:
-		R_LOG("Input is not a map[string]interface{}")
+		R_LOG("No map data in json")
 	}
 
 	return keys, values
 }
 
-func Iterate_Interface(data interface{}) []string {
+func Iterate_Interface(data interface{}) ([]string, error) {
 	var temp []string
 	switch slice := data.(type) {
 	case []interface{}:
@@ -231,9 +231,9 @@ func Iterate_Interface(data interface{}) []string {
 			temp = append(temp, temp_string)
 		}
 	default:
-		R_LOG("Input is not a []interface{}")
+		return nil, fmt.Errorf("no interface data in json")
 	}
-	return temp
+	return temp, nil
 }
 
 func Is_Float(str string) bool {

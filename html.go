@@ -218,7 +218,10 @@ func Build_Logic() string {
 		`)
 		v_keys, v_values := Iterate_Map(values_array)
 		for v_index, v_name := range v_keys {
-			temp_value := Iterate_Interface(v_values[v_index])
+			temp_value, err := Iterate_Interface(v_values[v_index])
+			if err != nil {
+				return "Could not find values, wait a minute and try again."
+			}
 			for _, v_value := range temp_value {
 				s_builder.WriteString("				<option value='" + v_value + "' class='hidden-option' data-group='" + v_name + "'>" + v_value + "</option>\n")
 			}
