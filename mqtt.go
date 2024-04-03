@@ -158,6 +158,9 @@ var connectlost_handler mqtt.ConnectionLostHandler = func(client mqtt.Client, er
 			if token := MQTT_CLIENT.Connect(); token.Wait() && token.Error() != nil {
 				R_LOG(token.Error().Error())
 			} else {
+				mqtt_sub(MQTT_CLIENT, MQTT_CONFIG)
+				mqtt_sub(MQTT_CLIENT, MQTT_STATUS)
+				mqtt_sub(MQTT_CLIENT, MQTT_USER+"/#")
 				return
 			}
 		}
