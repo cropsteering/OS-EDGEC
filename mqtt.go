@@ -152,10 +152,14 @@ var connectlost_handler mqtt.ConnectionLostHandler = func(client mqtt.Client, er
 	R_LOG("MQTT Disconnected, trying again in one minute: " + err.Error())
 	MQTT_CONNECTED = false
 	go func() {
-		time.Sleep(1 * time.Minute)
-		R_LOG("Retrying MQTT connect")
-		if token := MQTT_CLIENT.Connect(); token.Wait() && token.Error() != nil {
-			R_LOG(token.Error().Error())
+		for {
+			time.Sleep(1 * time.Minute)
+			R_LOG("Retrying MQTT connect")
+			if token := MQTT_CLIENT.Connect(); token.Wait() && token.Error() != nil {
+				R_LOG(token.Error().Error())
+			} else {
+				return
+			}
 		}
 	}()
 }
